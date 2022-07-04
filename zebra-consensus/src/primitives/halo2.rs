@@ -152,7 +152,9 @@ pub static VERIFIER: Lazy<
     Fallback::new(
         Batch::new(
             Verifier::new(&VERIFYING_KEY),
-            super::MAX_BATCH_SIZE,
+            // TODO: replace with MAX_BATCH_ITEMS once batch verification is implemented (#4672)
+            // (the latency is ignored with only one item)
+            1,
             super::MAX_BATCH_LATENCY,
         ),
         // We want to fallback to individual verification if batch verification
