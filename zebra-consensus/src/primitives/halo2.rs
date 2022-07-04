@@ -249,12 +249,16 @@ impl Service<BatchControl<Item>> for Verifier {
 
             BatchControl::Flush => {
                 tracing::trace!("got flush command");
+
                 let batch = mem::take(&mut self.batch);
-                let _ = self.tx.send(
-                    batch
-                        .verify(thread_rng(), self.vk)
-                        .map_err(Halo2Error::from),
-                );
+                // # Correctness
+                //
+                // Do CPU-intensive work on a dedicated thread, to avoid blocking other futures.
+                //
+                // TODO: use spawn_blocking to avoid blocking code running concurrently in this task
+                let result = tokio::task::block_in_place(|| batch.verify(thread_rng(), self.vk));
+                let _ = self.tx.send(result.map_err(Halo2Error::from));
+
                 Box::pin(async { Ok(()) })
             }
         }

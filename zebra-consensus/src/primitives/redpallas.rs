@@ -112,8 +112,16 @@ impl Service<BatchControl<Item>> for Verifier {
 
             BatchControl::Flush => {
                 tracing::trace!("got flush command");
+
                 let batch = mem::take(&mut self.batch);
-                let _ = self.tx.send(batch.verify(thread_rng()));
+                // # Correctness
+                //
+                // Do CPU-intensive work on a dedicated thread, to avoid blocking other futures.
+                //
+                // TODO: use spawn_blocking to avoid blocking code running concurrently in this task
+                let result = tokio::task::block_in_place(|| batch.verify(thread_rng()));
+                let _ = self.tx.send(result);
+
                 Box::pin(async { Ok(()) })
             }
         }

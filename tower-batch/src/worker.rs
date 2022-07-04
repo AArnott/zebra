@@ -1,3 +1,5 @@
+//! Batch processing worker task.
+
 use std::{
     pin::Pin,
     sync::{Arc, Mutex},
